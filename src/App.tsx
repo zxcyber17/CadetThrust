@@ -5,7 +5,7 @@ import { Register } from './components/Register'
 import './styles/neon.css'
 
 export default function App() {
-  const [isLogin, setIsLogin] = useState(true)
+  const [currentPage, setCurrentPage] = useState<'login' | 'register' | 'dashboard'>('login')
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -14,6 +14,7 @@ export default function App() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        // Check if Supabase is properly configured
         if (!supabase) {
           setError('Supabase is not configured. Please check your environment variables.')
           setLoading(false)
@@ -24,10 +25,15 @@ export default function App() {
         if (session?.user) {
           setIsLoggedIn(true)
           setCurrentUser(session.user)
+          setCurrentPage('dashboard')
+        } else {
+          // Always default to login if no session
+          setCurrentPage('login')
         }
         setLoading(false)
       } catch (err) {
         console.error('Auth check error:', err)
+        setError('Failed to connect to authentication service')
         setLoading(false)
       }
     }
@@ -40,9 +46,11 @@ export default function App() {
       if (session?.user) {
         setIsLoggedIn(true)
         setCurrentUser(session.user)
+        setCurrentPage('dashboard')
       } else {
         setIsLoggedIn(false)
         setCurrentUser(null)
+        setCurrentPage('login')
       }
     })
 
@@ -53,6 +61,7 @@ export default function App() {
 
   const handleLoginSuccess = () => {
     setIsLoggedIn(true)
+    setCurrentPage('dashboard')
   }
 
   const handleLogout = async () => {
@@ -61,7 +70,15 @@ export default function App() {
     }
     setIsLoggedIn(false)
     setCurrentUser(null)
-    setIsLogin(true)
+    setCurrentPage('login')
+  }
+
+  const handleSwitchToRegister = () => {
+    setCurrentPage('register')
+  }
+
+  const handleSwitchToLogin = () => {
+    setCurrentPage('login')
   }
 
   // Loading State
@@ -122,8 +139,8 @@ export default function App() {
             <ol>
               <li>Create a file named <code>.env.local</code> in your project root (same folder as package.json)</li>
               <li>Add your Supabase credentials:
-                <pre>VITE_SUPABASE_URL=https://oudenetxnadubdwoynyz.supabase.co
-VITE_SUPABASE_ANON_KEY=sb_publishable_Cs0zdmcDpZ54ZuD6Ixuk6Q_DFT4sbv</pre>
+                <pre>VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your_anon_key_here</pre>
               </li>
               <li>Save the file</li>
               <li>Restart the development server: Stop it (Ctrl+C) and run <code>npm run dev</code> again</li>
@@ -217,7 +234,7 @@ VITE_SUPABASE_ANON_KEY=sb_publishable_Cs0zdmcDpZ54ZuD6Ixuk6Q_DFT4sbv</pre>
   }
 
   // Dashboard State (Logged In)
-  if (isLoggedIn && currentUser) {
+  if (currentPage === 'dashboard' && isLoggedIn && currentUser) {
     return (
       <div className="dashboard-container">
         <div className="dashboard-content">
@@ -285,18 +302,18 @@ VITE_SUPABASE_ANON_KEY=sb_publishable_Cs0zdmcDpZ54ZuD6Ixuk6Q_DFT4sbv</pre>
     )
   }
 
-  // Login/Register State
+  // Login/Register State - DEFAULT TO LOGIN
   return (
     <div className="app">
-      {isLogin ? (
+      {currentPage === 'login' ? (
         <Login 
-          onSwitchToRegister={() => setIsLogin(false)}
+          onSwitchToRegister={handleSwitchToRegister}
           onLoginSuccess={handleLoginSuccess}
         />
       ) : (
         <Register 
-          onSwitchToLogin={() => setIsLogin(true)}
-          onRegisterSuccess={() => setIsLogin(true)}
+          onSwitchToLogin={handleSwitchToLogin}
+          onRegisterSuccess={() => handleSwitchToLogin()}
         />
       )}
     </div>
